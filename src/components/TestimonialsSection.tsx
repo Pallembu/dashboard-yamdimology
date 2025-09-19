@@ -100,7 +100,7 @@ function TestimonialCard({ testimonial, showRating, variant }: TestimonialCardPr
       <span
         key={i}
         className={`text-lg ${
-          i < rating ? 'text-yellow-400' : 'text-gray-300'
+          i < rating ? 'text-accent' : 'text-gray-300'
         }`}
       >
         ★
@@ -213,7 +213,7 @@ export function CompactTestimonials({
         {featuredTestimonials.map((testimonial) => (
           <div key={testimonial._id} className="border-b last:border-b-0 pb-4 last:pb-0">
             <div className="flex items-center mb-2">
-              <div className="flex text-yellow-400">
+              <div className="flex text-accent">
                 {Array.from({ length: testimonial.rating }, (_, i) => (
                   <span key={i}>★</span>
                 ))}

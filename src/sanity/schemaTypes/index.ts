@@ -6,7 +6,19 @@ import { blogPost } from './blogPost'
 import { siteSettings } from './siteSettings'
 import servicePackage from './servicePackage'
 import contactSubmission from './contactSubmission'
+import gallery from './gallery'
+import galleryCategory from './galleryCategory'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [heroSection, featuresSection, testimonial, blogPost, siteSettings, servicePackage, contactSubmission],
+  types: [
+    heroSection, 
+    featuresSection, 
+    testimonial, 
+    blogPost, 
+    siteSettings, 
+    servicePackage, 
+    contactSubmission,
+    gallery,
+    galleryCategory
+  ],
 }

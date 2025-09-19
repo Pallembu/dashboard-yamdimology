@@ -3,9 +3,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { sanityFetch, queries } from '@/sanity/lib/client'
 import { urlForHero, urlForProduct } from '@/sanity/lib/image'
+import { blogService } from '@/lib/blogService'
 import FeaturesSection from '@/components/FeaturesSection'
 import TestimonialsSection from '@/components/TestimonialsSection'
-import AnimatedSection, { PageTransition } from '@/components/AnimatedSection'
+import BlogCard from '@/components/BlogCard'
+import AnimatedSection, { PageTransition, StaggerContainer, StaggerItem } from '@/components/AnimatedSection'
+import { generateOrganizationJsonLd } from '@/lib/jsonLd'
 
 // Force dynamic rendering and disable caching for development
 export const dynamic = 'force-dynamic'
@@ -117,6 +120,7 @@ export default async function Home() {
   let featuresData: FeaturesSection | null = null
   let siteSettings: SiteSettings | null = null
   let testimonials: any[] = []
+  let featuredBlogPosts: any[] = []
 
   try {
     heroData = await sanityFetch<HeroSection>({
@@ -154,8 +158,23 @@ export default async function Home() {
     console.error('Failed to fetch testimonials:', error)
   }
 
+  try {
+    featuredBlogPosts = await blogService.getFeaturedPosts('id', 3)
+  } catch (error) {
+    console.error('Failed to fetch featured blog posts:', error)
+  }
+
+  // Generate structured data
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mhstour.com'
+  const organizationJsonLd = generateOrganizationJsonLd(baseUrl)
+
   return (
     <PageTransition className="min-h-screen">
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       {/* Hero Section - Fully Dynamic */}
       {heroData ? (
         <section className="relative bg-gradient-to-br from-primary via-primary to-primary-dark text-white py-20 lg:py-32 overflow-hidden">
@@ -213,6 +232,56 @@ export default async function Home() {
           maxTestimonials={3}
           variant="default"
         />
+      )}
+
+      {/* Featured Blog Posts Section */}
+      {featuredBlogPosts && featuredBlogPosts.length > 0 && (
+        <AnimatedSection className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  Tips & Artikel Terbaru
+                </h2>
+              </div>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Dapatkan tips perjalanan terbaru, panduan destinasi, dan inspirasi untuk petualangan Anda berikutnya
+              </p>
+            </div>
+            
+            <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {featuredBlogPosts.map((post) => (
+                <StaggerItem key={post._id}>
+                  <BlogCard
+                    post={post}
+                    variant="featured"
+                    showExcerpt={true}
+                    showAuthor={true}
+                    showDate={true}
+                    showReadingTime={true}
+                  />
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+            
+            <div className="text-center">
+              <Link
+                href="/blog"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary-dark transition-colors duration-200"
+              >
+                Lihat Semua Artikel
+                <svg className="ml-2 -mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </AnimatedSection>
       )}
 
       {/* Call to Action Section - Uses Site Settings */}
