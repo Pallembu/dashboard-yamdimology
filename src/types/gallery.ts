@@ -110,7 +110,6 @@ export interface GalleryGridProps {
   showFilters?: boolean
   columns?: number
   loading?: boolean
-  onGalleryClick?: (gallery: Gallery) => void
 }
 
 export interface GalleryCardProps {

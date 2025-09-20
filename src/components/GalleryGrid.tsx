@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { urlFor } from '@/sanity/lib/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Gallery, GalleryCategory, GalleryGridProps } from '@/types/gallery'
@@ -13,9 +14,9 @@ const GalleryGrid: React.FC<GalleryGridProps> = ({
   categories = [],
   showFilters = true,
   columns = 3,
-  loading = false,
-  onGalleryClick
+  loading = false
 }) => {
+  const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [hoveredGallery, setHoveredGallery] = useState<string | null>(null)
   const [lightboxGallery, setLightboxGallery] = useState<Gallery | null>(null)
@@ -93,12 +94,8 @@ const GalleryGrid: React.FC<GalleryGridProps> = ({
   }
 
   const handleGalleryClick = (gallery: Gallery) => {
-    if (onGalleryClick) {
-      onGalleryClick(gallery)
-    } else {
-      // Default behavior: open lightbox with first image
-      openLightbox(gallery, 0)
-    }
+    // Navigate to gallery detail page
+    router.push(`/gallery/${gallery.slug.current}`)
   }
 
   const getCategoryIcon = (category: string) => {

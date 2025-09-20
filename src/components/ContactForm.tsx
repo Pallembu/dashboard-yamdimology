@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { motion } from 'framer-motion'
 import AnimatedSection from './AnimatedSection'
 
@@ -8,46 +11,69 @@ interface ContactFormProps {
   className?: string
 }
 
-interface FormData {
-  name: string
-  email: string
-  phone: string
-  subject: string
-  message: string
-  tourInterest: string
-  travelDate: string
-  groupSize: string
-  budget: string
-}
+// Zod validation schema
+const contactFormSchema = z.object({
+  name: z.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  email: z.string()
+    .email('Please enter a valid email address')
+    .min(5, 'Email must be at least 5 characters')
+    .max(100, 'Email must be less than 100 characters'),
+  phone: z.string()
+    .optional()
+    .refine((val) => !val || /^[\+]?[0-9\s\-\(\)]{10,15}$/.test(val), {
+      message: 'Please enter a valid phone number'
+    }),
+  subject: z.string()
+    .min(5, 'Subject must be at least 5 characters')
+    .max(100, 'Subject must be less than 100 characters'),
+  message: z.string()
+    .min(20, 'Message must be at least 20 characters')
+    .max(1000, 'Message must be less than 1000 characters'),
+  tourInterest: z.string().optional(),
+  travelDate: z.string().optional(),
+  groupSize: z.string()
+    .optional()
+    .refine((val) => !val || (parseInt(val) >= 1 && parseInt(val) <= 50), {
+      message: 'Group size must be between 1 and 50'
+    }),
+  budget: z.string().optional()
+})
+
+type FormData = z.infer<typeof contactFormSchema>
 
 export default function ContactForm({ className = '' }: ContactFormProps) {
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: '',
-    tourInterest: '',
-    travelDate: '',
-    groupSize: '',
-    budget: ''
-  })
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    watch
+  } = useForm<FormData>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      subject: '',
+      message: '',
+      tourInterest: '',
+      travelDate: '',
+      groupSize: '',
+      budget: ''
+    }
+  })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+  // Watch form values for character counts
+  const messageLength = watch('message')?.length || 0
+  const subjectLength = watch('subject')?.length || 0
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  const onSubmit = async (data: FormData) => {
     setSubmitStatus('idle')
 
     try {
@@ -56,30 +82,25 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit form')
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to submit form')
       }
 
       setSubmitStatus('success')
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: '',
-        tourInterest: '',
-        travelDate: '',
-        groupSize: '',
-        budget: ''
+      reset()
+      
+      // Scroll to top of form to show success message
+      document.getElementById('contact-form')?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
       })
     } catch (error) {
       setSubmitStatus('error')
-      setErrorMessage(error instanceof Error ? error.message : 'An error occurred')
-    } finally {
-      setIsSubmitting(false)
+      setErrorMessage(error instanceof Error ? error.message : 'An error occurred while submitting the form')
     }
   }
 
@@ -104,7 +125,8 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
   ]
 
   return (
-    <AnimatedSection className={`bg-white rounded-lg shadow-lg p-8 ${className}`}>
+    <div id="contact-form">
+      <AnimatedSection className={`bg-white rounded-lg shadow-lg p-8 ${className}`}>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-black mb-2">Get in Touch</h2>
         <p className="text-gray-600">Ready to plan your adventure? Fill out the form below and we'll get back to you soon!</p>
@@ -116,7 +138,12 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
           animate={{ opacity: 1, y: 0 }}
           className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
         >
-          Thank you for your message! We'll get back to you within 24 hours.
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Thank you for your message! We'll get back to you within 24 hours.
+          </div>
         </motion.div>
       )}
 
@@ -126,11 +153,16 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
           animate={{ opacity: 1, y: 0 }}
           className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
         >
-          Error: {errorMessage}
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Error: {errorMessage}
+          </div>
         </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Personal Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -140,13 +172,15 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             <input
               type="text"
               id="name"
-              name="name"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('name')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.name ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Your full name"
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           <div>
@@ -156,13 +190,15 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             <input
               type="email"
               id="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('email')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="your.email@example.com"
             />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            )}
           </div>
         </div>
 
@@ -174,12 +210,15 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             <input
               type="tel"
               id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('phone')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.phone ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="+62 812 3456 7890"
             />
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+            )}
           </div>
 
           <div>
@@ -188,10 +227,10 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             </label>
             <select
               id="tourInterest"
-              name="tourInterest"
-              value={formData.tourInterest}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('tourInterest')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.tourInterest ? 'border-red-500' : 'border-gray-300'
+              }`}
             >
               {tourOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -199,6 +238,9 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
                 </option>
               ))}
             </select>
+            {errors.tourInterest && (
+              <p className="mt-1 text-sm text-red-600">{errors.tourInterest.message}</p>
+            )}
           </div>
         </div>
 
@@ -211,11 +253,14 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             <input
               type="date"
               id="travelDate"
-              name="travelDate"
-              value={formData.travelDate}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('travelDate')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.travelDate ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.travelDate && (
+              <p className="mt-1 text-sm text-red-600">{errors.travelDate.message}</p>
+            )}
           </div>
 
           <div>
@@ -225,14 +270,17 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             <input
               type="number"
               id="groupSize"
-              name="groupSize"
               min="1"
               max="50"
-              value={formData.groupSize}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('groupSize')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.groupSize ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Number of travelers"
             />
+            {errors.groupSize && (
+              <p className="mt-1 text-sm text-red-600">{errors.groupSize.message}</p>
+            )}
           </div>
 
           <div>
@@ -241,10 +289,10 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
             </label>
             <select
               id="budget"
-              name="budget"
-              value={formData.budget}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {...register('budget')}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                errors.budget ? 'border-red-500' : 'border-gray-300'
+              }`}
             >
               {budgetOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -252,40 +300,57 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
                 </option>
               ))}
             </select>
+            {errors.budget && (
+              <p className="mt-1 text-sm text-red-600">{errors.budget.message}</p>
+            )}
           </div>
         </div>
 
         {/* Subject and Message */}
         <div>
-          <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-            Subject *
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
+              Subject *
+            </label>
+            <span className="text-xs text-gray-500">
+              {subjectLength}/100
+            </span>
+          </div>
           <input
             type="text"
             id="subject"
-            name="subject"
-            required
-            value={formData.subject}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            {...register('subject')}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+              errors.subject ? 'border-red-500' : 'border-gray-300'
+            }`}
             placeholder="What can we help you with?"
           />
+          {errors.subject && (
+            <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-            Message *
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+              Message *
+            </label>
+            <span className="text-xs text-gray-500">
+              {messageLength}/1000
+            </span>
+          </div>
           <textarea
             id="message"
-            name="message"
-            required
             rows={5}
-            value={formData.message}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            {...register('message')}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+              errors.message ? 'border-red-500' : 'border-gray-300'
+            }`}
             placeholder="Tell us more about your travel plans, preferences, or any questions you have..."
           />
+          {errors.message && (
+            <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
+          )}
         </div>
 
         {/* Submit Button */}
@@ -306,5 +371,6 @@ export default function ContactForm({ className = '' }: ContactFormProps) {
         </div>
       </form>
     </AnimatedSection>
+    </div>
   )
 }

@@ -349,9 +349,6 @@ export default async function GalleryDetailPage({ params }: Props) {
                 galleries={relatedGalleries}
                 showFilters={false}
                 columns={4}
-                onGalleryClick={(gallery) => {
-                  window.location.href = `/gallery/${gallery.slug.current}`
-                }}
               />
             </div>
           </AnimatedSection>

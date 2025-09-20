@@ -78,6 +78,37 @@ export const siteSettings = defineType({
       ]
     }),
     defineField({
+      name: 'businessHours',
+      title: 'Business Hours',
+      type: 'object',
+      fields: [
+        {
+          name: 'mondayFriday',
+          title: 'Monday - Friday',
+          type: 'string',
+          initialValue: '9:00 AM - 6:00 PM'
+        },
+        {
+          name: 'saturday',
+          title: 'Saturday',
+          type: 'string',
+          initialValue: '9:00 AM - 4:00 PM'
+        },
+        {
+          name: 'sunday',
+          title: 'Sunday',
+          type: 'string',
+          initialValue: 'Closed'
+        },
+        {
+          name: 'timezone',
+          title: 'Timezone',
+          type: 'string',
+          initialValue: 'WIB (GMT+7)'
+        }
+      ]
+    }),
+    defineField({
       name: 'socialMedia',
       title: 'Social Media Links',
       type: 'object',

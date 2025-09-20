@@ -85,10 +85,6 @@ export default async function GalleryPage() {
               categories={categories}
               showFilters={true}
               columns={3}
-              onGalleryClick={(gallery) => {
-                // Navigate to gallery detail page
-                window.location.href = `/gallery/${gallery.slug.current}`
-              }}
             />
           ) : (
             // Empty state
@@ -138,9 +134,6 @@ export default async function GalleryPage() {
               galleries={galleries.filter(g => g.isFeatured)}
               showFilters={false}
               columns={4}
-              onGalleryClick={(gallery) => {
-                window.location.href = `/gallery/${gallery.slug.current}`
-              }}
             />
           </div>
         </AnimatedSection>
