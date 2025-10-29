@@ -1,7 +1,8 @@
 'use client';
 
-import { Card, Title, Text, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@tremor/react';
+import { Card, Title, Text, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button } from '@tremor/react';
 import { formatDateTime } from '@/lib/dateUtils';
+import { Eye, Mail } from 'lucide-react';
 
 interface Login {
   userId: string;
@@ -41,6 +42,7 @@ export default function RecentLoginsTable({ logins }: RecentLoginsTableProps) {
             <TableRow>
               <TableHeaderCell>User ID</TableHeaderCell>
               <TableHeaderCell>Last Login Time</TableHeaderCell>
+              <TableHeaderCell>Actions</TableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -53,6 +55,15 @@ export default function RecentLoginsTable({ logins }: RecentLoginsTableProps) {
                   <Text className="text-sm text-gray-600">
                     {formatLoginTime(login.lastLoginAt)}
                   </Text>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={() => alert(`View user details for ID: ${login.userId}\n\nThis would show full user profile and activity history.`)}
+                  >
+                    <Eye className="w-3 h-3" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

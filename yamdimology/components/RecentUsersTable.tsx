@@ -1,7 +1,8 @@
 'use client';
 
-import { Card, Title, Text, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@tremor/react';
+import { Card, Title, Text, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button } from '@tremor/react';
 import { formatMonthYear } from '@/lib/dateUtils';
+import { Eye, Mail } from 'lucide-react';
 
 interface User {
   email: string;
@@ -13,6 +14,14 @@ interface RecentUsersTableProps {
 }
 
 export default function RecentUsersTable({ users }: RecentUsersTableProps) {
+  const handleViewUser = (email: string) => {
+    alert(`View user details for: ${email}\n\nThis would open a modal with full user information.`);
+  };
+
+  const handleEmailUser = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
   return (
     <Card>
       <Title>Recent Users</Title>
@@ -28,6 +37,7 @@ export default function RecentUsersTable({ users }: RecentUsersTableProps) {
             <TableRow>
               <TableHeaderCell>Email</TableHeaderCell>
               <TableHeaderCell>Registration Date</TableHeaderCell>
+              <TableHeaderCell>Actions</TableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -38,6 +48,24 @@ export default function RecentUsersTable({ users }: RecentUsersTableProps) {
                 </TableCell>
                 <TableCell>
                   {formatMonthYear(user.createdAt)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      onClick={() => handleViewUser(user.email)}
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      onClick={() => handleEmailUser(user.email)}
+                    >
+                      <Mail className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

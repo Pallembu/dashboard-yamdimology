@@ -1,7 +1,7 @@
 'use client';
 
-import { TabGroup, TabList, Tab, TabPanels, TabPanel, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, Title } from '@tremor/react';
-import { CreditCard, AlertCircle, Clock, XCircle } from 'lucide-react';
+import { TabGroup, TabList, Tab, TabPanels, TabPanel, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, Title, Button } from '@tremor/react';
+import { CreditCard, AlertCircle, Clock, XCircle, Eye, Download, RefreshCw } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 
 interface Payment {
@@ -29,6 +29,26 @@ function formatPaymentMethod(method: string): string {
 }
 
 export default function PaymentsTabs({ successfulPayments, pendingPayments, expiredPayments }: PaymentsTabsProps) {
+  const handleViewDetails = (payment: Payment) => {
+    alert(`Payment Details\n\nOrder ID: ${payment.orderId}\nUser: ${payment.userEmail}\nAmount: Rp ${payment.totalPayment?.toLocaleString('id-ID')}\nStatus: ${payment.status}\n\nThis would open a detailed modal with full payment information.`);
+  };
+
+  const handleDownloadReceipt = (payment: Payment) => {
+    alert(`Downloading receipt for Order ID: ${payment.orderId}\n\nThis would generate and download a PDF receipt.`);
+  };
+
+  const handleRefund = (payment: Payment) => {
+    if (confirm(`Are you sure you want to refund this payment?\n\nOrder ID: ${payment.orderId}\nAmount: Rp ${payment.totalPayment?.toLocaleString('id-ID')}`)) {
+      alert('Refund initiated. This would process the refund through the payment gateway.');
+    }
+  };
+
+  const handleRetryPayment = (payment: Payment) => {
+    if (confirm(`Retry payment for Order ID: ${payment.orderId}?\n\nThis will send a new payment link to ${payment.userEmail}`)) {
+      alert('Payment retry initiated. Notification sent to user.');
+    }
+  };
+
   return (
     <TabGroup>
       <TabList className="mb-6">
@@ -69,6 +89,7 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                       <TableHeaderCell>Paid Date</TableHeaderCell>
                       <TableHeaderCell>Amount</TableHeaderCell>
                       <TableHeaderCell>Status</TableHeaderCell>
+                      <TableHeaderCell>Actions</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -100,6 +121,32 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                           <Badge color="emerald" size="sm">
                             Completed
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleViewDetails(payment)}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleDownloadReceipt(payment)}
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              color="rose"
+                              onClick={() => handleRefund(payment)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -135,6 +182,7 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                       <TableHeaderCell>Expiry Date</TableHeaderCell>
                       <TableHeaderCell>Amount</TableHeaderCell>
                       <TableHeaderCell>Status</TableHeaderCell>
+                      <TableHeaderCell>Actions</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -166,6 +214,25 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                           <Badge color="amber" size="sm">
                             Pending
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleViewDetails(payment)}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              color="amber"
+                              onClick={() => handleRetryPayment(payment)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -201,6 +268,7 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                       <TableHeaderCell>Expiry Date</TableHeaderCell>
                       <TableHeaderCell>Amount</TableHeaderCell>
                       <TableHeaderCell>Status</TableHeaderCell>
+                      <TableHeaderCell>Actions</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -232,6 +300,25 @@ export default function PaymentsTabs({ successfulPayments, pendingPayments, expi
                           <Badge color="rose" size="sm">
                             Expired
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleViewDetails(payment)}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              color="amber"
+                              onClick={() => handleRetryPayment(payment)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

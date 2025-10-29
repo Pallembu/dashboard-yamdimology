@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { Card, Title, Text, Grid, Badge, Flex, Button, TextInput } from '@tremor/react';
-import { Search, UserPlus, Mail } from 'lucide-react';
+import { Search, UserPlus, Mail, Edit, Trash2, Eye } from 'lucide-react';
 import { formatShortDate } from '@/lib/dateUtils';
+import ContactModal from '@/components/modals/ContactModal';
+import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 
 interface Contact {
   id: string;
@@ -22,15 +24,64 @@ interface ClientContactsProps {
 }
 
 export default function ClientContacts({ initialContacts }: ClientContactsProps) {
-  const [contacts] = useState<Contact[]>(initialContacts);
+  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
 
   const handleAddContact = () => {
-    alert('Add Contact: In production, this would create a new user');
+    setSelectedContact(null);
+    setModalMode('add');
+    setIsModalOpen(true);
   };
 
-  const handleViewProfile = (id: string) => {
-    alert(`View Profile ${id}: This would show full user details`);
+  const handleViewProfile = (contact: Contact) => {
+    setSelectedContact(contact);
+    setModalMode('view');
+    setIsModalOpen(true);
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setSelectedContact(contact);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (contact: Contact) => {
+    setSelectedContact(contact);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedContact) {
+      setContacts(prev => prev.filter(c => c.id !== selectedContact.id));
+      setSelectedContact(null);
+    }
+  };
+
+  const handleSaveContact = (contactData: Partial<Contact> & { name: string; email: string; phone: string; location: string; status: string }) => {
+    if (modalMode === 'add') {
+      const newContact: Contact = {
+        id: `contact-${Date.now()}`,
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone,
+        location: contactData.location,
+        status: contactData.status,
+        joinDate: new Date().toISOString(),
+        resumes: 0,
+        lastActive: 'Just now',
+      };
+      setContacts(prev => [newContact, ...prev]);
+    } else if (modalMode === 'edit' && selectedContact) {
+      setContacts(prev =>
+        prev.map(c => c.id === selectedContact.id ? { ...c, ...contactData } : c)
+      );
+    }
+    setIsModalOpen(false);
+    setSelectedContact(null);
   };
 
   const handleEmail = (email: string) => {
@@ -138,18 +189,54 @@ export default function ClientContacts({ initialContacts }: ClientContactsProps)
                 </Text>
               </div>
 
-              <Button 
-                size="xs" 
-                className="w-full mt-4"
-                variant="secondary"
-                onClick={() => handleViewProfile(contact.id)}
-              >
-                View Profile
-              </Button>
+              <Flex className="mt-4 gap-2">
+                <Button 
+                  size="xs" 
+                  variant="secondary"
+                  onClick={() => handleViewProfile(contact)}
+                  className="flex-1"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  View
+                </Button>
+                <Button 
+                  size="xs" 
+                  variant="secondary"
+                  onClick={() => handleEditContact(contact)}
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+                <Button 
+                  size="xs" 
+                  variant="secondary"
+                  color="rose"
+                  onClick={() => handleDeleteClick(contact)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </Flex>
             </Card>
           ))
         )}
       </Grid>
+
+      {/* Modals */}
+      <ContactModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveContact}
+        contact={selectedContact}
+        mode={modalMode}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Contact"
+        message="Are you sure you want to delete this contact?"
+        itemName={selectedContact?.name}
+      />
     </>
   );
 }
